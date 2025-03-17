@@ -1,2 +1,2 @@
-# OpenAgentToolProtocol
-OATP - Open, Compatible, Safe and Easy Agent tool Protocol.
+# OpenAgentToolService
+OATS - Open, Compatible, Safe and Easy Agent tool Service.
