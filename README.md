@@ -2,6 +2,52 @@
 OATS - Open, Compatible, Safe and Easy Agent tool Service.
 
 
+```python
+{
+    "tools" :
+    [
+        {
+            "name": "get_alerts",
+            "description": "Get weather alerts for a US state.\n\n    Args:\n        state: Two-letter US state code (e.g. CA, NY)\n    ",
+            "input_schema": {
+                "properties": {
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "state"
+                ],
+                "title": "get_alertsArguments",
+                "type": "object"
+            }
+        },
+        {
+            "name": "get_forecast",
+            "description": "Get weather forecast for a location.\n\n    Args:\n        latitude: Latitude of the location\n        longitude: Longitude of the location\n    ",
+            "input_schema": {
+                "properties": {
+                    "latitude": {
+                        "title": "Latitude",
+                        "type": "number"
+                    },
+                    "longitude": {
+                        "title": "Longitude",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "latitude",
+                    "longitude"
+                ],
+                "title": "get_forecastArguments",
+                "type": "object"
+            }
+        }
+    ]
+}
+```
 
 ### MCP --> Model
 Model input json:  
