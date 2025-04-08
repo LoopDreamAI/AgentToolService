@@ -1,10 +1,65 @@
-# OpenAgentToolService
-OATS - Open, Compatible, Safe and Easy Agent tool Service.
+# AgentToolService
+ATS - Open, Compatible, Safe and Easy Agent tool Service.
+
+## Tool Service
+
+tool服务器端点如下，需要注意/callback端点为SSE连接：
+
+- get("/health")
+  服务器状态
+  return {"status": status}
+  "ok"/"unready"  
+
+
+- get("/reset")
+  重启MCP服务（更新工具后快速配置）
+  return {"status": status}
+  "ok"/"unready"/"error"  
+
+
+- get("/get_tool")
+  获取当前所有工具
+  return ToolList  
+```python
+[
+    {
+        "name": "example_func",
+        "description": "Please provide a description of the function here.\n\n    Args:\n        example_arg: Describe the input here.\n    ",
+        "input_schema": {
+            "properties": {
+                "example_arg": {
+                    "title": "Example Arg",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "example_arg"
+            ],
+            "title": "example_funcArguments",
+            "type": "object"
+        }
+    }
+]
+```  
+
+
+
+- post("/call_tool/{tool_name}")
+  调用工具
+  Input (tool_args: Dict)
+  return {"task_id": task_id}  
+
+
+- get("/callback/{task_id}")
+  获取工具结果，通过sse实时响应
+  return EventSourceResponse(event_generator())  
+  响应处理可见[tool_caller.py](./tool_caller.py)
+  
 
 
 
 
-
+## MCP
 ```python
 {
     "tools" :

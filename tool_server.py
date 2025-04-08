@@ -134,10 +134,22 @@ async def sse_updates(task_id: str):
             await asyncio.sleep(1)
     return EventSourceResponse(event_generator())
 
-@app.post("/cancel/{task_id}")
+@app.get("/cancel/{task_id}")
 async def cancel_task(task_id: str):
     if task := tasks.get(task_id):
         task["status"] = "cancelled"
+        return {
+                "data": {
+                    "status": task["status"],
+                    "result": task["result"],
+                    "error": task["error"]
+                }
+            }
+    else:
+        return {
+                "event": "error", 
+                "data": "The task does not exist or has been cleared."
+            }
 
 if __name__ == "__main__":
     uvicorn.run(
