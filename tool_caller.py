@@ -17,6 +17,9 @@ def sse_call_tool(tool_name: str, tool_args: dict):
     
     try:
         for msg in messages:
+            if not msg.data:
+                print(f"Received message: {msg.data}")
+                continue
             event = getattr(msg, 'event', None)
             if event == 'error':
                 print(f"Error: {msg.data}")

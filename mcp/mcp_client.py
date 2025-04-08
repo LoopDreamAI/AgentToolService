@@ -93,12 +93,15 @@ class MCPClient:
                 final_text.append(result.content)
         return "\n".join(final_text)
     
-    async def call_tool(self, tool_name: str, tool_args: dict):
+    async def call_tool(self, tool_name: str, tool_args: dict) -> list:
         result = await self.session.call_tool(tool_name, tool_args)
         if result.isError:
             raise RuntimeError(str(result.content))
         else:
-            return result.content
+            results = []
+            for r in result.content:
+                results.append(r.model_dump(mode="json",by_alias=True))
+            return results
 
 
     async def cleanup(self):

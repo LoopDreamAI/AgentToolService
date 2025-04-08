@@ -113,22 +113,20 @@ async def sse_updates(task_id: str):
             task = tasks.get(task_id)
             
             if not task:
-                yield {
+                yield json.dumps({
                     "event": "error", 
                     "data": "The task does not exist or has been cleared."
-                }
+                })
                 break
                 
             if task["status"] != last_status:
-                yield {
-                    "data": {
+                yield json.dumps({
                         "status": task["status"],
                         "result": task["result"],
                         "error": task["error"]
-                    }
-                }
+                    })
                 last_status = task["status"]
-                if task["status"] in ("completed", "failed", "cancelled"):
+                if last_status in ("completed", "failed", "cancelled"):
                     break
 
             await asyncio.sleep(1)

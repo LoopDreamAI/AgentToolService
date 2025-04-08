@@ -46,7 +46,7 @@ class MCPManager:
     def get_status(self):
         return self.is_ready
 
-    async def call_tool(self, tool_name: str = None, tool_args: dict = None):
+    async def call_tool(self, tool_name: str = None, tool_args: dict = None) -> list:
         if tool_name == None: 
             self.tool_list.clear()
             self.tool_client.clear()
