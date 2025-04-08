@@ -5,20 +5,20 @@ ATS - Open, Compatible, Safe and Easy Agent tool Service.
 
 tool服务器端点如下，需要注意/callback端点为SSE连接：
 
-- get("/health")
-  服务器状态
-  return {"status": status}
-  "ok"/"unready"  
+- get("/health")  
+  服务器状态  
+  return {"status": status}  
+  "ok"/"unready"   
 
 
-- get("/reset")
-  重启MCP服务（更新工具后快速配置）
-  return {"status": status}
+- get("/reset")  
+  重启MCP服务（更新工具后快速配置）  
+  return {"status": status}  
   "ok"/"unready"/"error"  
 
 
-- get("/get_tool")
-  获取当前所有工具
+- get("/get_tool")  
+  获取当前所有工具  
   return ToolList  
 ```python
 [
@@ -44,16 +44,16 @@ tool服务器端点如下，需要注意/callback端点为SSE连接：
 
 
 
-- post("/call_tool/{tool_name}")
-  调用工具
-  Input (tool_args: Dict)
+- post("/call_tool/{tool_name}")  
+  调用工具  
+  Input (tool_args: Dict)  
   return {"task_id": task_id}  
 
 
-- get("/callback/{task_id}")
-  获取工具结果，通过sse实时响应
+- get("/callback/{task_id}")  
+  获取工具结果，通过sse实时响应  
   return EventSourceResponse(event_generator())  
-  响应处理可见[tool_caller.py](./tool_caller.py)
+  响应处理可见[tool_caller.py](./tool_caller.py)  
   
 
 
