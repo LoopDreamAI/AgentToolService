@@ -6,9 +6,8 @@ import uvicorn
 from typing import Dict
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
-from sse_starlette.sse import EventSourceResponse
 
-from mcp import MCPManager
+from manager import MCPManager
 
 manager = MCPManager()
 
@@ -107,30 +106,21 @@ def update_task(task_id: str, updates: dict):
 
 @app.get("/callback/{task_id}")
 async def sse_updates(task_id: str):
-    async def event_generator():
-        last_status = None
-        while True:
-            task = tasks.get(task_id)
-            
-            if not task:
-                yield json.dumps({
-                    "event": "error", 
-                    "data": "The task does not exist or has been cleared."
-                })
-                break
-                
-            if task["status"] != last_status:
-                yield json.dumps({
-                        "status": task["status"],
-                        "result": task["result"],
-                        "error": task["error"]
-                    })
-                last_status = task["status"]
-                if last_status in ("completed", "failed", "cancelled"):
-                    break
+    while True:
+        task = tasks.get(task_id)
+        if not task:
+            return {
+                "event": "error", 
+                "data": "The task does not exist or has been cleared."
+            }
+        if task["status"] in ("completed", "failed", "cancelled"):
+            return {
+                    "status": task["status"],
+                    "result": task["result"],
+                    "error": task["error"]
+                }
+        await asyncio.sleep(1)
 
-            await asyncio.sleep(1)
-    return EventSourceResponse(event_generator())
 
 @app.get("/cancel/{task_id}")
 async def cancel_task(task_id: str):
