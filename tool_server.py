@@ -12,6 +12,9 @@ from manager import MCPManager
 manager = MCPManager()
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
+temp_dir = os.path.join(current_dir, "temp")
+os.makedirs(temp_dir, exist_ok=True)
+
 def load_agent_tools():
     config_path = os.path.join(current_dir, "config", "agent_tools.json")
     with open(config_path, 'r') as file:
@@ -28,6 +31,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+def write_lib():
+    if not manager.get_status():
+        with open(os.path.join(temp_dir, "tools.py"), "w") as py_lib:
+            py_lib.write("")
+    
+    initial = "from ..tool_caller import call_tool\n"
+    code = ""
+    for tool in manager.get_tools():
+        schema = tool.get("input_schema")
+        arg = ""
+        arg_dict = "    tool_args = {"
+        if schema:
+            for in_arg in schema.get("properties").keys():
+                default = ""
+                if not schema.get("required").has(in_arg):
+                    default = "=None"
+                arg += f"{in_arg}{default},"
+                arg_dict += f"'{in_arg}':{in_arg},"
+        arg_dict += "}"
+
+        code += f"def {tool['name']}({arg}):\n{arg_dict}\n    result = call_tool('{tool['name']}', tool_args)\n    return result\n"
+    with open(os.path.join(temp_dir, "tools.py"), "w") as py_lib:
+        py_lib.write(initial + code)
+
 @app.get("/health")
 async def health_check():
     status = "ok" if manager.get_status() else "unready"
@@ -40,6 +67,7 @@ async def reset():
         agent_tools = load_agent_tools()
         await manager.ready()
         status = "ok" if manager.get_status() else "unready"
+        write_lib()
         return {"status": status}
     except Exception as e:
         print(f"Error during reset: {e}")
@@ -59,6 +87,57 @@ async def get_tools(agent_name: str):
 # Call
 tasks: Dict[str, dict] = {}
 
+@app.post("/call")
+async def create_task(code: str):
+    task_id = str(uuid.uuid4())
+    tasks[task_id] = {
+        "tool": "run_code",
+        "arg": code,
+        "status": "pendding",
+        "result": None,
+        "error": None,
+    }
+    asyncio.create_task(execute_code(task_id, code))
+    return {"task_id": task_id}
+async def execute_code(task_id: str, code: str):
+    update_task(task_id, {"status": "running"})
+
+    file_path = os.path.join(temp_dir, f"{task_id}.py")
+    with open(file_path, "w") as f:
+        f.write(code)
+    
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "python",
+            file_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        stdout, stderr = await proc.communicate()
+        
+        if proc.returncode == 0:
+            update_task(task_id, {
+                "status": "completed",
+                "result": stdout.decode().strip(),
+                "error": None
+            })
+        else:
+            raise RuntimeError(stderr.decode().strip())
+        
+    except Exception as e:
+        update_task(task_id, {
+            "status": "failed",
+            "result": None,
+            "error": f"{type(e).__name__}: {str(e)}"
+        })
+    finally:
+        try:
+            os.remove(file_path)
+        finally:
+            await asyncio.sleep(300)
+            tasks.pop(task_id, None)
+
 @app.post("/call_tool/{tool_name}")
 async def create_tool_task(tool_name: str, tool_args: Dict):
     tool_names = manager.get_toolnames()
@@ -77,7 +156,6 @@ async def create_tool_task(tool_name: str, tool_args: Dict):
     asyncio.create_task(execute_tool(task_id, tool_name, tool_args))
     
     return {"task_id": task_id}
-
 async def execute_tool(task_id: str, tool_name: str, tool_args: Dict):
     update_task(task_id, {"status": "running"})
     try:
@@ -105,7 +183,7 @@ def update_task(task_id: str, updates: dict):
         tasks[task_id].update(updates)
 
 @app.get("/callback/{task_id}")
-async def sse_updates(task_id: str):
+async def task_updates(task_id: str):
     while True:
         task = tasks.get(task_id)
         if not task:
